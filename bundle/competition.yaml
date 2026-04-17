@@ -1,0 +1,57 @@
+# The Yaml file contains the main parameters describing the challenge.
+# You can learn more about the possible settings here:
+# https://docs.codabench.org/latest/Organizers/Benchmark_Creation/Yaml-Structure/
+
+# Meta settings
+version: 2
+title: MUnitQuest - Data Challenge
+description: >-
+  Submission platform for the data challenge https://munitquest.github.io/data-challenge/
+image: logo.png
+registration_auto_approve: False  # require approval from admin to join the comp
+docker_image: 'codalab/codalab-legacy:py312'
+contact_email: munitquest@outlook.com
+
+# Documentation web pages
+terms: pages/terms.md
+pages:
+  - title: Overview
+    file: pages/overview.md
+  - title: Data
+    file: pages/data.md
+  - title: Submission
+    file: pages/submission.md
+  - title: Evaluation
+    file: pages/evaluation.md
+
+phases:
+- index: 0
+  name: 'Data Challenge'
+  description: >-
+    The Data Challenge is a community-driven effort to build a diverse, high-quality collection of
+    experimental and simulated HDsEMG datasets with reliably labeled motor unit spike trains.
+    These datasets form the foundation of the Showdown Phase of the Algorithm Challenge.
+  start: 06-01-2026
+  end: 09-15-2026
+  tasks:
+  - 0
+
+# Definition of the tasks
+tasks:
+- index: 0
+  name: Dataset validation
+  description: 'Submitted metadata is evaluated against the BIDS specification for EMG data.
+    Upon successful validation, an email will be sent to the submitter containing an upload link to some cloud bucket'
+  is_public: false
+  scoring_program: scoring/
+
+leaderboards:
+- index: 0
+  title: Dataset validation leaderboard
+  key: "dataset_validation"
+  submission_rule: "Add_And_Delete_Multiple"
+  columns:
+  - title: "Valid"
+    key: "valid"
+    index: 0
+    sorting: desc
