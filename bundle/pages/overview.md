@@ -10,6 +10,9 @@ Community members contribute datasets consisting of experimental or simulated HD
 
 See the Submission and Registration page for details on how to prepare and submit a dataset. To make getting started with EMG-BIDS as easy as possible, we provide tutorials (coming soon) and assisted generation of BIDS metadata files through a web interface (coming soon).
 
+## Awards
+All accepted data contributions will be published according to the FAIR (Findable, Accessible, Interoperable, Reusable) principles in an open data repository. All accepted dataset contributions will also be invited to share their work in a collaborative data paper in a special issue of the [Journal of Electromyography and Kinesiology](https://www.sciencedirect.com/journal/journal-of-electromyography-and-kinesiology).
+
 ## Further Information
 For further information, visit https://munitquest.github.io/data-challenge/<br/>
 In the case of any issues, feel free to reach out to the organizers.<br/>
