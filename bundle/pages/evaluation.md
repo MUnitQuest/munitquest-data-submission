@@ -1,5 +1,5 @@
 # Evaluation
-To ensure the quality of the datasets used for the algorithmic challenges Isometric and Dynamic contractions, and to obtain the scoring of the Data challenge, we plan to conduct a double-blind review process by recruiting an expert panel (10-12 persons) that rates the datasets based on a set of pre-defined criteria:
+Each dataset is rated by the expert panel on the following criteria:
 - **Metadata and provenance** (10 percent) – verifies that submissions satisfy [CEDE](https://cede.isek.org/) reporting matrices, thereby guaranteeing reproducibility and downstream re-use
 - **Raw-signal quality** (30 percent) – gauges whether the HDsEMG signals are “decomposition-ready”. Key metrics include the baseline noise of each channel, residual power-line interference at 50/60 Hz, and the fraction of bad channels.
 - **Label quality** (40 percent) – evaluates the quality and trustworthiness of the labeled motor unit spike trains. This includes the labeling approach (e.g., simultaneous invasive EMG) as well as established trustworthiness measures such as the silhouette score and interspike-interval variability.

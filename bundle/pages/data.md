@@ -1,3 +1,2 @@
 # Data
-
-All submitted datasets have to be [BIDS](https://bids.neuroimaging.io/index.html)-compliant. The organizers will conduct automatic validations thorugh the codabench-platform, before providing the upload link to a cloud storage location.<br/>An exemplary submission can be viewed in the starter kit.
+The Data Challenge heaviliy relies on and supports [EMG-BIDS](https://bids-specification.readthedocs.io/en/stable/modality-specific-files/electromyography.html)-specifications and **FAIR** data principles.<br/><br/>**More details to follow soon!**

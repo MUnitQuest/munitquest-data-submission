@@ -1,13 +1,17 @@
-# Overview
-Please see https://munitquest.github.io/, especially https://munitquest.github.io/data-challenge/, for more information!
-Have fun and good luck in the competition!
+# Data Challenge
+## What is it
+The Data Challenge is a community-driven effort to build a diverse, high-quality collection of experimental and simulated HDsEMG datasets with reliably labeled motor unit spike trains. These datasets form the foundation of the Showdown Phase of the Algorithm Challenge.
 
-In the case of any issues, feel free to reach out to the organizers.
+## Who is it for
+The Data Challenge is targeted at experimental researchers who use HDsEMG and simulation scientists developing electrophysiological models who want to apply their methods in a highly relevant field of applied neuromuscular research.
+
+## How does it work
+Community members contribute datasets consisting of experimental or simulated HDsEMG data together with labeled motor unit spike trains. Submissions need to be prepared in the standardized EMG-BIDS format and are assessed via a double-blind review process by an expert panel. All datasets entering the MUnitQuest data collection will be released on an open data repository (for datasets not entering the collection, this remains optional).
+
+See the Submission and Registration page for details on how to prepare and submit a dataset. To make getting started with EMG-BIDS as easy as possible, we provide tutorials (coming soon) and assisted generation of BIDS metadata files through a web interface (coming soon).
+
+## Further Information
+For further information, visit https://munitquest.github.io/data-challenge/<br/>
+In the case of any issues, feel free to reach out to the organizers.<br/>
 <br/>
-Please note that this platform only serves as some form of eligibility validator for data submission. The submission process will be as follows:
-
-1. Submission of BIDS metadata
-2. Automatic validation
-3. Upon successful validation, an upload link will be provided
-4. Upload data to the provided cloud storage destination
-5. Semi-automatic, expert panel review
+**Good luck and have fun!**
