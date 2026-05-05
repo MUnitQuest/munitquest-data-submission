@@ -1,0 +1,9 @@
+{
+    "ignore": [
+        {
+            "subCode": "HEDVersion"
+        }
+    ],
+    "warning": [],
+    "error": []
+}
