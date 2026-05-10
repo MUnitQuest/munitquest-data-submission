@@ -1,6 +1,9 @@
 {
     "ignore": [
         {
+            "code": "SIDECAR_WITHOUT_DATAFILE"
+        },
+        {
             "subCode": "HEDVersion"
         }
     ],
