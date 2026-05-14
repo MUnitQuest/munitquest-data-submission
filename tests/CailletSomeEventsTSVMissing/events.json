@@ -1,0 +1,26 @@
+{
+    "sample": {
+        "Description": "Sample index of the event onset (zero-indexing)",
+        "Unit": "samples"
+    },
+    "mvc_rate": {
+        "Description": "Rate at which the torque changes in percent MVC per second",
+        "Unit": "% MVC / s"
+    },
+    "mvc_level": {
+        "Description": "MVC (maximum voluntary contraction) level at the onset of the event",
+        "Unit": "% MVC"
+    },
+    "event_type": {
+        "Description": "Event label.",
+        "Levels": {
+            "muscle_on": "The muscle is activated.",
+            "muscle_off": "The muscle is deactivated.",
+            "linear_isometric_ramp": "The isometric torque changes linearly over time with a fixed rate.",
+            "steady_isometric": "Steady isometric contraction at a fixed MVC level."
+        }
+    },
+    "description": {
+        "Description": "Free text event description."
+    }
+}

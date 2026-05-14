@@ -1,0 +1,5 @@
+{
+    "EMGCoordinateSystem": "Other",
+    "EMGCoordinateSystemDescription": "x-axis: proximal -> distal; y-axis: medial -> lateral; the coordinate system is located at the knee joint",
+    "EMGCoordinateUnits": "percent"
+}
