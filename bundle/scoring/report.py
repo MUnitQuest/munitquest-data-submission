@@ -18,10 +18,10 @@ from collections import Counter, defaultdict
 
 class MUnitQuestDataSubmissionReport:
 
-    def __init__(self, valid: bool, error_path: str, warning_path: str):
+    def __init__(self, valid: bool, errors: str | dict, warnings: str | dict):
         self.valid: bool = valid
-        self.errors: dict = self.load_json(error_path)
-        self.warnings: dict = self.load_json(warning_path)
+        self.errors: dict = self.load_json(errors) if isinstance(errors, str) else errors
+        self.warnings: dict = self.load_json(warnings) if isinstance(warnings, str) else warnings
 
         self.html: str = ""
 
@@ -81,7 +81,7 @@ class MUnitQuestDataSubmissionReport:
                     padding: 20px;
                     border-radius: 8px;
                     margin-bottom: 30px;
-                    background: {"#ffe6e6" if self.valid else "#e6ffe6"};
+                    background: {"#e6ffe6" if self.valid else "#ffe6e6"};
                 }}
 
                 .error {{ color: #c62828; }}

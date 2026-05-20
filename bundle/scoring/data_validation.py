@@ -10,10 +10,12 @@ additional scan of the submitted data.
 
 import json
 import subprocess
+import os
+import sys
 
 from report import MUnitQuestDataSubmissionReport
 from dataclasses import dataclass
-from muniverse.utils.bids_routines import *  # type: ignore (import not resolved locally)
+# from muniverse.utils.bids_routines import *  # type: ignore (import not resolved locally)
 
 
 @dataclass
@@ -49,7 +51,8 @@ class MUnitQuestDataSubmissionValidator:
         ignored_fields: list[str] = [],
         ignored_files: list[str] = [],
         print_errors: bool = False,
-        print_warnings: bool = False
+        print_warnings: bool = False,
+        config_path: str | None = None
     ) -> tuple[list, list, bool]:
         """
         API to the official BIDS validator.
@@ -65,12 +68,23 @@ class MUnitQuestDataSubmissionValidator:
         Returns:
             tuple[list, list, bool]: List of detected errors, list of detected warnings, and overall validity of the dataset.
         """
+        # more robust towards remote clusters to call the cli tool via it's full path
+        validator: str = os.path.join(os.path.dirname(sys.executable), "bids-validator-deno")
         # Run bids validator
-        result = subprocess.run(
-            ["bids-validator-deno", "--format", "json", self.dataset],
-            capture_output=True,
-            text=True
-        )
+        if config_path is None:
+            result = subprocess.run(
+                [validator, "--format", "json", self.dataset],
+                capture_output=True,
+                text=True
+            )
+        else:
+            assert os.path.exists(config_path), f"Provided config path {config_path} does not exist."
+            result = subprocess.run(
+                [validator, "--format", "json", "--config", config_path, self.dataset],
+                capture_output=True,
+                text=True
+            )
+        
         # Extract and filter all issues
         validation = json.loads(result.stdout)
         issues = validation["issues"]["issues"]
@@ -94,6 +108,23 @@ class MUnitQuestDataSubmissionValidator:
 
         return errors, warnings, valid
     
+    @staticmethod
+    def validation_config(path: str):
+        validation_config: dict[str, list[dict]] = {
+            "ignore": [],
+            "warning": [
+                {
+                    "code": "SIDECAR_WITHOUT_DATAFILE",  # ignore missing edfs
+                }, 
+            ],
+            "error": [],
+        }
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(validation_config, f, indent=4)
+
+        return validation_config
+    
     def write_scores(self, path: str) -> None:
         # update valid metric
         if self.valid:
@@ -101,3 +132,18 @@ class MUnitQuestDataSubmissionValidator:
         # has to be written to scores.json
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.metrics, f, indent=4)
+
+    def _to_json(self, path: str, data: list) -> None:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+    
+    def generate_report(self, outfile: str) -> None:
+        report: MUnitQuestDataSubmissionReport = MUnitQuestDataSubmissionReport(
+            valid=self.valid,
+            errors=self.errors,
+            warnings=self.warnings
+        )
+
+        report.write_report(outfile)
+
+        return None

@@ -1,2 +1,2 @@
-command: python data_validation.py
+command: python main.py /app/input/res /app/output/
 description: Indicates successfull validation of submission
