@@ -34,11 +34,16 @@ if __name__ == "__main__":
     print(f"Dataset path: {dataset_path}")
 
     validator: MUnitQuestDataSubmissionValidator = MUnitQuestDataSubmissionValidator(dataset_path)
+
+    # generate validation config
+    config_path: str = "bids_validation_config.json"
+    validator.validation_config(config_path)
+
     errors, warnings, valid = validator.run_bids_validator(
         print_errors=True,
         print_warnings=True,
         # config_path="bidsValidatorConfig.json",
-        config_path=None,
+        config_path=config_path,
     )
     validator.write_scores(os.path.join(output_path, "scores.json"))
     validator.generate_report(os.path.join(output_path, "detailed_results.html"))

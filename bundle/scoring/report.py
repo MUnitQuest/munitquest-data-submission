@@ -18,15 +18,24 @@ from collections import Counter, defaultdict
 
 class MUnitQuestDataSubmissionReport:
 
-    def __init__(self, valid: bool, errors: str | dict, warnings: str | dict):
+    def __init__(self, valid: bool, errors: str | list[dict], warnings: str | list[dict]):
+        """
+        Initializes report generation
+
+        Args:
+            valid (bool): overall validity of the dataset submission
+            errors (str | list[dict]): path to json file containing list of error items or list of error items itself
+            warnings (str | list[dict]): path to json file containing list of warning items or list of warning items itself
+        """
         self.valid: bool = valid
-        self.errors: dict = self.load_json(errors) if isinstance(errors, str) else errors
-        self.warnings: dict = self.load_json(warnings) if isinstance(warnings, str) else warnings
+        self.errors: list[dict] = self.load_json(errors) if isinstance(errors, str) else errors
+        self.warnings: list[dict] = self.load_json(warnings) if isinstance(warnings, str) else warnings
 
         self.html: str = ""
 
     @property
     def validation_status(self) -> str:
+        """ human readable validation status for report header """
         return "Valid" if self.valid else "Invalid"
     
     @property
@@ -44,6 +53,15 @@ class MUnitQuestDataSubmissionReport:
         
     @staticmethod
     def aggregate_by_code(items: list[dict]) -> tuple[Counter, defaultdict]:
+        """
+        Aggregate level details on validation results
+
+        Args:
+            items (list[dict]): warning or errors
+
+        Returns:
+            tuple[Counter, defaultdict]: category counts and grouped items by category
+        """
         counter: Counter = Counter()
         grouped: defaultdict = defaultdict(list)
 
@@ -55,7 +73,9 @@ class MUnitQuestDataSubmissionReport:
         return counter, grouped
 
     def generate_html(self) -> str:
-        # raise NotImplementedError
+        """
+        Assembles the HTML code step by step.
+        """
         error_counts, error_groups = self.aggregate_by_code(self.errors)
         warning_counts, warning_groups = self.aggregate_by_code(self.warnings)
 
@@ -203,6 +223,15 @@ class MUnitQuestDataSubmissionReport:
         return self.html
     
     def write_report(self, path: str) -> None:
+        """
+        Exports the report to a desired path
+
+        Args:
+            path (str): complete path (including filename) to which the report should be written
+
+        Returns:
+            None
+        """
         if not self.html:
             self.generate_html()
 
