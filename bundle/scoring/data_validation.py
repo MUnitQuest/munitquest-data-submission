@@ -1,7 +1,19 @@
+"""
+Functionality for validating data submissions.
+The submission will be validated against the BIDS validator
+(https://github.com/bids-standard/bids-validator).
+Further, successful submissions to MUnitQuest require an additional
+custom validation layer, applied to BIDS validation results and an
+additional scan of the submitted data.
+"""
+
+
 import json
+import subprocess
 
 from report import MUnitQuestDataSubmissionReport
 from dataclasses import dataclass
+from muniverse.utils.bids_routines import *  # type: ignore (import not resolved locally)
 
 
 @dataclass
@@ -16,13 +28,76 @@ class ValidationItem:
 
 class MUnitQuestDataSubmissionValidator:
 
-    def __init__(self):
-        raise NotImplementedError
+    def __init__(self, dataset: str):
+        """
+        Init for dataset submission class.
+        Args:
+            dataset (str): root path of BIDS dataset to be validated
+        """
         self.metrics: dict[str, float] = {
             "valid": 0.
         }
+
+        self.dataset = dataset
+        self.errors: list = None
+        self.warnings: list = None
+        self.valid: bool = False
+
+    def run_bids_validator(
+        self,
+        ignored_codes: list[str] = [],
+        ignored_fields: list[str] = [],
+        ignored_files: list[str] = [],
+        print_errors: bool = False,
+        print_warnings: bool = False
+    ) -> tuple[list, list, bool]:
+        """
+        API to the official BIDS validator.
+        Heavlily inspired by: https://github.com/dfarinagroup/muniverse/blob/main/src/muniverse/utils/bids_routines.py
+
+        Args:
+            ignored_codes (list[str], optional): Ignored error codes (e.g. ["SIDECAR_KEY_RECOMMENDED"]). Defaults to [].
+            ignored_fields (list[str], optional): Errors corresponding to that field are ignored (e.g. ["DeviceSerialNumber"]). Defaults to [].
+            ignored_files (list[str], optional): Ignored errors in these files (e.g. ["/dataset_description.json"]). Defaults to [].
+            print_errors (bool, optional): Decides if errors should be printed. Defaults to False.
+            print_warnings (bool, optional): Decides if warnings should be printed. Defaults to False.
+
+        Returns:
+            tuple[list, list, bool]: List of detected errors, list of detected warnings, and overall validity of the dataset.
+        """
+        # Run bids validator
+        result = subprocess.run(
+            ["bids-validator-deno", "--format", "json", self.dataset],
+            capture_output=True,
+            text=True
+        )
+        # Extract and filter all issues
+        validation = json.loads(result.stdout)
+        issues = validation["issues"]["issues"]
+        issues = [f for f in issues if (not "code" in f or f["code"] not in ignored_codes)]
+        issues = [f for f in issues if (not "subCode" in f or f["subCode"] not in ignored_fields)]
+        issues = [f for f in issues if (not "location" in f or f["location"] not in ignored_files)]
+        # Split issues in errors and warnings
+        errors = [f for f in issues if f["severity"] == "error"]
+        warnings = [f for f in issues if f["severity"] == "warning"]
+        # Print issues
+        if print_errors:
+            print(f"Number of detected errors: {len(errors)}")
+            print(json.dumps(errors, indent=4))
+        if print_warnings:    
+            print(f"Number of detected warnings: {len(warnings)}")
+            print(json.dumps(warnings, indent=4))
+        # Check if the folder is BIDS valid
+        valid = True if len(errors) == 0 else False
+
+        self.errors, self.warnings, self.valid = errors, warnings, valid  
+
+        return errors, warnings, valid
     
     def write_scores(self, path: str) -> None:
+        # update valid metric
+        if self.valid:
+            self.metrics["valid"] = 1.
         # has to be written to scores.json
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.metrics, f, indent=4)
