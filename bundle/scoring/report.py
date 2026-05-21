@@ -71,6 +71,28 @@ class MUnitQuestDataSubmissionReport:
             grouped[code].append(item)
 
         return counter, grouped
+    
+    @staticmethod
+    def __extract_upload_url() -> str:
+        """
+        Private helper to extract the upload url from a .txt-file expected to 
+            be present in the current working directory.
+
+        Raises:
+            FileNotFoundError: if that file is not found
+
+        Returns:
+            str: the upload URL
+        """
+        path: str = os.path.join(os.getcwd(), "url.txt")
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Expected upload URL file not found at {path}")
+        
+        with open(path, "r") as f:
+            upload_url = f.readline()
+        
+        return upload_url
+
 
     def generate_html(self) -> str:
         """
@@ -152,7 +174,19 @@ class MUnitQuestDataSubmissionReport:
                 <p><strong>Error Count:</strong> <span class="error">{self.total_errors}</span></p>
                 <p><strong>Warning Count:</strong> <span class="warning">{self.total_warnings}</span></p>
             </div>
+        """
 
+        if self.valid:
+            upload_url: str = self.__extract_upload_url()
+            self.html += f"""
+                <div class="summary">
+                    <h2>Upload Instructions</h2>
+                    <p>Your dataset has passed validation! Please upload your dataset conating the actual recordings to the following URL:</p>
+                    <p><a target="_blank" rel="noopener noreferrer" href="{upload_url}">{upload_url}</a></p>
+                </div>
+            """
+
+        self.html += f"""
             <h2>2. Aggregated Issues</h2>
 
             <h3>Errors</h3>

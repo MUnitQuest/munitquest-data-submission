@@ -18,7 +18,7 @@ if __name__ == "__main__":
     # important on remote server
     try:
         import bids_validator
-    except ImportError as ie:
+    except ImportError:
         print("bids_validator not found, installing...")
         INSTALL("bids-validator-deno")
     
@@ -42,7 +42,6 @@ if __name__ == "__main__":
     errors, warnings, valid = validator.run_bids_validator(
         print_errors=True,
         print_warnings=True,
-        # config_path="bidsValidatorConfig.json",
         config_path=config_path,
     )
     validator.write_scores(os.path.join(output_path, "scores.json"))
