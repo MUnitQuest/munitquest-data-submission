@@ -14,7 +14,7 @@ def INSTALL(dep: str) -> None:
     subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
 
 
-if __name__ == "__main__":
+def main() -> None:
     # important on remote server
     try:
         import bids_validator
@@ -48,3 +48,7 @@ if __name__ == "__main__":
     )
     validator.write_scores(os.path.join(output_path, "scores.json"))
     validator.generate_report(os.path.join(output_path, "detailed_results.html"))
+
+
+if __name__ == "__main__":
+    main()
