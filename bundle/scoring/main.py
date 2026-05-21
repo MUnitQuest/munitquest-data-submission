@@ -30,7 +30,9 @@ if __name__ == "__main__":
     print(f"Input path: {input_path}")
     print(f"Output path: {output_path}")
 
-    dataset_path: str = os.path.join(input_path, "Caillet")
+    # dataset name will be the only directory at the root of input_path
+    dataset_name: str = os.listdir(input_path)[0]
+    dataset_path: str = os.path.join(input_path, dataset_name)
     print(f"Dataset path: {dataset_path}")
 
     validator: MUnitQuestDataSubmissionValidator = MUnitQuestDataSubmissionValidator(dataset_path)
