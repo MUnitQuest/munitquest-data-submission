@@ -13,7 +13,7 @@ import subprocess
 import os
 import sys
 
-from report import MUnitQuestDataSubmissionReport
+from scoring.report import MUnitQuestDataSubmissionReport
 from dataclasses import dataclass
 # from muniverse.utils.bids_routines import *  # type: ignore (import not resolved locally)
 
@@ -70,7 +70,7 @@ class MUnitQuestDataSubmissionValidator:
         """
         # quick check if the provided dataset path is valid. If not, the program would throw
         # a JSONDecodeError, which is not very informative.
-        if not os.path.exists(self.dataset):
+        if not os.path.exists(os.path.join(self.dataset, "dataset_description.json")):
             raise FileNotFoundError(
                 f"Provided dataset path {self.dataset} does not exist. Make sure it is located at the root of the submitted zip-Archive"
             )

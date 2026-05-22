@@ -2,26 +2,10 @@ import sys
 import os
 import subprocess
 
-from data_validation import MUnitQuestDataSubmissionValidator
+from scoring.data_validation import MUnitQuestDataSubmissionValidator as Validator
 
 
-def INSTALL(dep: str) -> None:
-    """
-    (HELPER) Installs a dependency at runtime.
-    Args:
-        dep (str): name of python package to be installed
-    """
-    subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
-
-
-def main() -> None:
-    # important on remote server
-    try:
-        import bids_validator
-    except ImportError:
-        print("bids_validator not found, installing...")
-        INSTALL("bids-validator-deno")
-    
+def main() -> None:    
     assert len(sys.argv) == 3, "Usage: python main.py <input_path> <output_path>"
 
     input_path: str = sys.argv[1]
@@ -35,7 +19,7 @@ def main() -> None:
     dataset_path: str = os.path.join(input_path, dataset_name)
     print(f"Dataset path: {dataset_path}")
 
-    validator: MUnitQuestDataSubmissionValidator = MUnitQuestDataSubmissionValidator(dataset_path)
+    validator: Validator = Validator(dataset_path)
 
     # generate validation config
     config_path: str = "bids_validation_config.json"

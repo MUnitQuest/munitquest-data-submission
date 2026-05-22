@@ -4,3 +4,4 @@
 *.vscode/
 out/
 *bids_validation_config.json*
+*scoring.egg-info/
