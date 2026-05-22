@@ -36,7 +36,7 @@ jobs:
         run: pip install -e bundle/scoring
 
       - name: Install test dependencies
-        run: pip install pytest pytest-cov
+        run: pip install pytest pytest-cov bids-validator-deno
 
       - name: Run tests
         run: pytest -ra --strict-markers
