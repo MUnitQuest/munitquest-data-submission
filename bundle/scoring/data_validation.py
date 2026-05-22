@@ -68,6 +68,12 @@ class MUnitQuestDataSubmissionValidator:
         Returns:
             tuple[list, list, bool]: List of detected errors, list of detected warnings, and overall validity of the dataset.
         """
+        # quick check if the provided dataset path is valid. If not, the program would throw
+        # a JSONDecodeError, which is not very informative.
+        if not os.path.exists(self.dataset):
+            raise FileNotFoundError(
+                f"Provided dataset path {self.dataset} does not exist. Make sure it is located at the root of the submitted zip-Archive"
+            )
         # more robust towards remote clusters to call the cli tool via it's full path
         validator: str = os.path.join(os.path.dirname(sys.executable), "bids-validator-deno")
         # Run bids validator
