@@ -5,7 +5,7 @@ Test cases for HTML report module.
 import pytest
 import os
 
-from bundle.scoring.report import MUnitQuestDataSubmissionReport as Report
+from scoring.report import MUnitQuestDataSubmissionReport as Report
 
 
 @pytest.mark.parametrize("valid, expected_status", [

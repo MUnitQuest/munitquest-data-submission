@@ -1,0 +1,9 @@
+{
+    "ignore": [],
+    "warning": [
+        {
+            "code": "SIDECAR_WITHOUT_DATAFILE"
+        }
+    ],
+    "error": []
+}
