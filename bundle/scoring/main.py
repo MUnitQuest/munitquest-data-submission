@@ -1,11 +1,10 @@
 import sys
 import os
-import subprocess
 
 from scoring.data_validation import MUnitQuestDataSubmissionValidator as Validator
 
 
-def main() -> None:    
+def main() -> None:
     assert len(sys.argv) == 3, "Usage: python main.py <input_path> <output_path>"
 
     input_path: str = sys.argv[1]
