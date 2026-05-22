@@ -1,2 +1,2 @@
-command: python main.py /app/input/res /app/output/
+command: bash execute.sh
 description: Indicates successfull validation of submission
