@@ -13,6 +13,7 @@ import subprocess
 import os
 import sys
 import abc
+import warnings
 
 from scoring.report import MUnitQuestDataSubmissionReport
 from dataclasses import asdict, dataclass
@@ -235,6 +236,8 @@ class MUnitQuestDataSubmissionValidator(Validator):
 
         self.bids_validator = MUnitQuestBidsValidatior(dataset)
         self.custom_validator = MUnitQuestCustomValidator(dataset)
+
+        self._check_bidsignore()
     
     @property
     def metrics(self) -> dict[str, float]:
@@ -243,6 +246,40 @@ class MUnitQuestDataSubmissionValidator(Validator):
             # space for more metrics
         }
         return metrics
+    
+    def _check_bidsignore(self) -> None:
+        """
+        Our validation scheme requires `derivatives/` to be present
+        in the .bidsignore file. This function checks if the file
+        exists in the root of the data directory. If the file does not
+        exist it is created. If the file does exist, but does not contain
+        `derivatives/`, the foldername is appended.
+
+        This is because derivative files are not standardized yet in terms
+        of BIDS validation. Hence, a lot of false positive errors would
+        be generated if derivatives are not ignored.
+
+        Returns:
+            None
+        """
+        bidsignore_path: str = os.path.join(self.dataset, ".bidsignore")
+        if not os.path.exists(bidsignore_path):
+            with open(bidsignore_path, "w", encoding="utf-8") as f:
+                warnings.warn(
+                    ".bidsignore file missing and added to the dataset to exclude derivatives from BIDS validator.",
+                    UserWarning
+                )
+                f.write("derivatives/\n")
+        else:
+            with open(bidsignore_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            if "derivatives/\n" not in lines:
+                with open(bidsignore_path, "a", encoding="utf-8") as f:
+                    warnings.warn(
+                        "'derivatives/' missing in .bidsignore file. Added to exclude derivatives from BIDS validator.",
+                        UserWarning
+                    )
+                    f.write("derivatives/\n")
     
     def write_scores(self, path: str) -> None:
         # has to be written to scores.json
