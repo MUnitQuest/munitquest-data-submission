@@ -12,9 +12,10 @@ import json
 import subprocess
 import os
 import sys
+import abc
 
 from scoring.report import MUnitQuestDataSubmissionReport
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 # from muniverse.utils.bids_routines import *  # type: ignore (import not resolved locally)
 
 
@@ -28,13 +29,49 @@ class ValidationItem:
     rule: str = "N/A"  # TODO
 
 
-class MUnitQuestBidsValidatior:
-    """ Class for validating BIDS datasets. """
+class Validator(abc.ABC):
+    """ Base class for validators. """
 
     def __init__(self, dataset: str):
         self.dataset = dataset
+        # quick check if the provided dataset path is valid. If not, the program would throw
+        # a JSONDecodeError, which is not very informative.
+        if not os.path.exists(os.path.join(self.dataset, "dataset_description.json")):
+            raise FileNotFoundError(
+                f"Provided dataset path {self.dataset} does not exist. Make sure it is located at the root of the submitted zip-Archive"
+            )
+
+        self.errors: list[dict] = []
+        self.warnings: list[dict] = []
+        self._valid: bool = False
     
-    def run_bids_validator(
+    @property
+    def valid(self) -> bool:
+        self._valid = True if len(self.errors) == 0 else False
+        return self._valid
+
+    @abc.abstractmethod
+    def validate(self, **kwargs):
+        pass
+    
+    @staticmethod
+    def _load_json(path: str) -> dict:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+    
+    @staticmethod
+    def _to_json(path: str, data: list) -> None:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+class MUnitQuestBidsValidatior(Validator):
+    """ Class for validating BIDS datasets. """
+
+    def __init__(self, dataset: str):
+        super().__init__(dataset)
+
+    def validate(
         self,
         ignored_codes: list[str] = [],
         ignored_fields: list[str] = [],
@@ -93,7 +130,7 @@ class MUnitQuestBidsValidatior:
         # Check if the folder is BIDS valid
         valid = True if len(errors) == 0 else False
 
-        self.errors, self.warnings, self.valid = errors, warnings, valid  
+        self.errors, self.warnings, self._valid = errors, warnings, valid  
 
         return errors, warnings, valid
     
@@ -115,14 +152,78 @@ class MUnitQuestBidsValidatior:
         return validation_config
 
 
-class MUnitQuestCustomValidator:
+class MUnitQuestCustomValidator(Validator):
     """ class for custom validation on top of BIDS validation results."""
 
     def __init__(self, dataset: str):
+        super().__init__(dataset)
+        self.dataset_sidecar: dict = self._load_json(os.path.join(self.dataset, "dataset_description.json"))
+    
+    @staticmethod
+    def _itemize(code: str, severity: str, location: str) -> dict[str, str]:
+        item: ValidationItem = ValidationItem(
+            code=code,
+            severity=severity,
+            location=location,
+            origin="MUnitQuest Custom Validator",
+        )
+        return asdict(item)
+    
+    def validate_sampling_frequency(self, min_freq: int = 2000) -> None:
+        """
+        Validates towards a minimum sampling frequency in the EMGSideCar.
+            Error Code: "INSUFFICIENT_SAMPLING_FREQUENCY"
+        Args:
+            min_freq (int, optional): applied minimum sampling frequency. Defaults to 2000.
+        
+        Returns:
+            None, but adds to self.errors if the sampling frequency is too low.
+        """
         raise NotImplementedError
+    
+    def validate_ethics_approval(self) -> None:
+        """
+        Validates towards non-empty existance of ethics approval.
+            Error Code: "MISSING_ETHICS_APPROVAL"
+        
+        Returns:
+            None, but adds to self.errors if ethics approval is missing.
+        """
+        ethics_approvals: list | None = self.dataset_sidecar.get("EthicsApprovals", None)
+        if ethics_approvals is None:
+            self.errors.append(
+                self._itemize(
+                    code="MISSING_ETHICS_APPROVAL",
+                    severity="error",
+                    location="/dataset_description.json"
+                )
+            )
+        elif not isinstance(ethics_approvals, list):
+            self.errors.append(
+                self._itemize(
+                    code="INVALID_ETHICS_APPROVAL_TYPE",
+                    severity="error",
+                    location="/dataset_description.json"
+                )
+            )
+        elif len(ethics_approvals) == 0:
+            self.errors.append(
+                self._itemize(
+                    code="MISSING_ETHICS_APPROVAL",
+                    severity="error",
+                    location="/dataset_description.json"
+                )
+            )
+        
+        return None
+    
+    def validate(self) -> tuple[list, bool]:
+        self.validate_ethics_approval()
+
+        return self.errors, self.valid
 
 
-class MUnitQuestDataSubmissionValidator:
+class MUnitQuestDataSubmissionValidator(Validator):
 
     def __init__(self, dataset: str):
         """
@@ -130,24 +231,10 @@ class MUnitQuestDataSubmissionValidator:
         Args:
             dataset (str): root path of BIDS dataset to be validated
         """
-        self._metrics: dict[str, float] = {
-            "valid": 0.
-        }
-
-        self.dataset = dataset
-        # quick check if the provided dataset path is valid. If not, the program would throw
-        # a JSONDecodeError, which is not very informative.
-        if not os.path.exists(os.path.join(self.dataset, "dataset_description.json")):
-            raise FileNotFoundError(
-                f"Provided dataset path {self.dataset} does not exist. Make sure it is located at the root of the submitted zip-Archive"
-            )
+        super().__init__(dataset)
 
         self.bids_validator = MUnitQuestBidsValidatior(dataset)
-        # self.custom_validator = MUnitQuestCustomValidator(dataset)
-        
-        self.errors: list = None
-        self.warnings: list = None
-        self.valid: bool = False
+        self.custom_validator = MUnitQuestCustomValidator(dataset)
     
     @property
     def metrics(self) -> dict[str, float]:
@@ -159,12 +246,7 @@ class MUnitQuestDataSubmissionValidator:
     
     def write_scores(self, path: str) -> None:
         # has to be written to scores.json
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.metrics, f, indent=4)
-
-    def _to_json(self, path: str, data: list) -> None:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4)
+        self._to_json(path, self.metrics)
     
     def generate_report(self, outfile: str) -> None:
         report: MUnitQuestDataSubmissionReport = MUnitQuestDataSubmissionReport(
@@ -185,10 +267,15 @@ class MUnitQuestDataSubmissionValidator:
         if config_path is not None:
             self.bids_validator.validation_config(config_path)  
         
-        errors, warnings, valid = self.bids_validator.run_bids_validator(
+        errors, warnings, _ = self.bids_validator.validate(
             print_errors=kwargs.get("print_errors", False),
             print_warnings=kwargs.get("print_warnings", False),
             config_path=config_path
         )
-        self.errors, self.warnings, self.valid = errors, warnings, valid
+
+        custom_errors, _ = self.custom_validator.validate()
+
+        self.errors = errors + custom_errors
+        self.warnings = warnings  # currently no custom warnings implemented
+
         return self.errors, self.warnings, self.valid

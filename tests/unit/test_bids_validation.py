@@ -10,7 +10,7 @@ from scoring.data_validation import MUnitQuestBidsValidatior as Validator
 
 def test_validator_valid_path():
     validator: Validator = Validator(dataset="tests/testdata/Caillet")
-    _, _, _ = validator.run_bids_validator()
+    _, _, _ = validator.validate()
     assert validator.errors is not None
     assert validator.warnings is not None
 
@@ -18,11 +18,11 @@ def test_validator_valid_path():
 def test_validator_with_config():
     validator: Validator = Validator(dataset="tests/testdata/Caillet")
     with pytest.raises(AssertionError):
-        _, _, _ = validator.run_bids_validator(config_path="nonexist_config.json")
+        _, _, _ = validator.validate(config_path="nonexist_config.json")
     
-    errors_no_config, warnings_no_config, valid_no_config = validator.run_bids_validator()
+    errors_no_config, warnings_no_config, valid_no_config = validator.validate()
     
-    errors_with_config, warnings_with_config, valid_with_config = validator.run_bids_validator(
+    errors_with_config, warnings_with_config, valid_with_config = validator.validate(
         config_path="tests/testdata/validation_config.json"
     )
     assert errors_no_config != errors_with_config
