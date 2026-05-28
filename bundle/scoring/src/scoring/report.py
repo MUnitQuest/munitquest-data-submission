@@ -181,7 +181,7 @@ class MUnitQuestDataSubmissionReport:
             self.html += f"""
                 <div class="summary">
                     <h2>Upload Instructions</h2>
-                    <p>Your dataset has passed validation! Please upload your dataset conating the actual recordings to the following URL:</p>
+                    <p>Your dataset has passed validation! Please upload your dataset containing the actual recordings to the following URL:</p>
                     <p><a target="_blank" rel="noopener noreferrer" href="{upload_url}">{upload_url}</a></p>
                 </div>
             """
