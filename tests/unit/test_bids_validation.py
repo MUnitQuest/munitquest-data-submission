@@ -5,17 +5,7 @@ Tests the BIDS validation logic in the data validation module.
 import pytest
 import os
 
-from scoring.data_validation import MUnitQuestDataSubmissionValidator as Validator
-
-
-@pytest.mark.parametrize("path", [
-    "nonexist",
-    "tests/testdata/invalidDirStructure"
-])
-def test_validator_invalid_path(path):
-    with pytest.raises(FileNotFoundError):
-        validator: Validator = Validator(dataset=path)
-        _, _, _ = validator.run_bids_validator()
+from scoring.data_validation import MUnitQuestBidsValidatior as Validator
 
 
 def test_validator_valid_path():

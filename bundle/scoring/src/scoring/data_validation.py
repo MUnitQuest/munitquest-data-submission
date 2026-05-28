@@ -28,30 +28,12 @@ class ValidationItem:
     rule: str = "N/A"  # TODO
 
 
-class MUnitQuestDataSubmissionValidator:
+class MUnitQuestBidsValidatior:
+    """ Class for validating BIDS datasets. """
 
     def __init__(self, dataset: str):
-        """
-        Init for dataset submission class.
-        Args:
-            dataset (str): root path of BIDS dataset to be validated
-        """
-        self.metrics: dict[str, float] = {
-            "valid": 0.
-        }
-
         self.dataset = dataset
-        # quick check if the provided dataset path is valid. If not, the program would throw
-        # a JSONDecodeError, which is not very informative.
-        if not os.path.exists(os.path.join(self.dataset, "dataset_description.json")):
-            raise FileNotFoundError(
-                f"Provided dataset path {self.dataset} does not exist. Make sure it is located at the root of the submitted zip-Archive"
-            )
-        
-        self.errors: list = None
-        self.warnings: list = None
-        self.valid: bool = False
-
+    
     def run_bids_validator(
         self,
         ignored_codes: list[str] = [],
@@ -131,11 +113,51 @@ class MUnitQuestDataSubmissionValidator:
             json.dump(validation_config, f, indent=4)
 
         return validation_config
+
+
+class MUnitQuestCustomValidator:
+    """ class for custom validation on top of BIDS validation results."""
+
+    def __init__(self, dataset: str):
+        raise NotImplementedError
+
+
+class MUnitQuestDataSubmissionValidator:
+
+    def __init__(self, dataset: str):
+        """
+        Init for dataset submission class.
+        Args:
+            dataset (str): root path of BIDS dataset to be validated
+        """
+        self._metrics: dict[str, float] = {
+            "valid": 0.
+        }
+
+        self.dataset = dataset
+        # quick check if the provided dataset path is valid. If not, the program would throw
+        # a JSONDecodeError, which is not very informative.
+        if not os.path.exists(os.path.join(self.dataset, "dataset_description.json")):
+            raise FileNotFoundError(
+                f"Provided dataset path {self.dataset} does not exist. Make sure it is located at the root of the submitted zip-Archive"
+            )
+
+        self.bids_validator = MUnitQuestBidsValidatior(dataset)
+        # self.custom_validator = MUnitQuestCustomValidator(dataset)
+        
+        self.errors: list = None
+        self.warnings: list = None
+        self.valid: bool = False
+    
+    @property
+    def metrics(self) -> dict[str, float]:
+        metrics: dict[str, float] = {
+            "valid": 0. if self.valid else 1.,
+            # space for more metrics
+        }
+        return metrics
     
     def write_scores(self, path: str) -> None:
-        # update valid metric
-        if self.valid:
-            self.metrics["valid"] = 1.
         # has to be written to scores.json
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.metrics, f, indent=4)
@@ -154,3 +176,19 @@ class MUnitQuestDataSubmissionValidator:
         report.write_report(outfile)
 
         return None
+    
+    def validate(self, **kwargs) -> tuple[list, list, bool]:
+        """
+        Orchestrates the BIDS validation and the custom validation
+        """
+        config_path: str | None = kwargs.get("config_path", None)
+        if config_path is not None:
+            self.bids_validator.validation_config(config_path)  
+        
+        errors, warnings, valid = self.bids_validator.run_bids_validator(
+            print_errors=kwargs.get("print_errors", False),
+            print_warnings=kwargs.get("print_warnings", False),
+            config_path=config_path
+        )
+        self.errors, self.warnings, self.valid = errors, warnings, valid
+        return self.errors, self.warnings, self.valid

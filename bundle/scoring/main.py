@@ -22,9 +22,8 @@ def main() -> None:
 
     # generate validation config
     config_path: str = "bids_validation_config.json"
-    validator.validation_config(config_path)
 
-    errors, warnings, valid = validator.run_bids_validator(
+    errors, warnings, valid = validator.validate(
         print_errors=True,
         print_warnings=True,
         config_path=config_path,
