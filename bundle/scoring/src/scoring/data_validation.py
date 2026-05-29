@@ -42,6 +42,8 @@ class Validator(abc.ABC):
                 f"Provided dataset path {self.dataset} does not exist. Make sure it is located at the root of the submitted zip-Archive"
             )
 
+        self.dataset_name: str = self.dataset.split("/")[-1]
+
         self.errors: list[dict] = []
         self.warnings: list[dict] = []
         self._valid: bool = False
@@ -50,6 +52,9 @@ class Validator(abc.ABC):
     def valid(self) -> bool:
         self._valid = True if len(self.errors) == 0 else False
         return self._valid
+
+    def _relative_path(self, path: str) -> str:
+        return f"{self.dataset_name}{path.split(self.dataset_name)[-1]}"
 
     @abc.abstractmethod
     def validate(self, **kwargs):
@@ -66,11 +71,48 @@ class Validator(abc.ABC):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
 
+
 class MUnitQuestBidsValidatior(Validator):
     """ Class for validating BIDS datasets. """
 
     def __init__(self, dataset: str):
         super().__init__(dataset)
+
+        self._check_bidsignore()
+    
+    def _check_bidsignore(self) -> None:
+        """
+        Our validation scheme requires `derivatives/` to be present
+        in the .bidsignore file. This function checks if the file
+        exists in the root of the data directory. If the file does not
+        exist it is created. If the file does exist, but does not contain
+        `derivatives/`, the foldername is appended.
+
+        This is because derivative files are not standardized yet in terms
+        of BIDS validation. Hence, a lot of false positive errors would
+        be generated if derivatives are not ignored.
+
+        Returns:
+            None
+        """
+        bidsignore_path: str = os.path.join(self.dataset, ".bidsignore")
+        if not os.path.exists(bidsignore_path):
+            with open(bidsignore_path, "w", encoding="utf-8") as f:
+                warnings.warn(
+                    ".bidsignore file missing and added to the dataset to exclude derivatives from BIDS validator.",
+                    UserWarning
+                )
+                f.write("derivatives/\n")
+        else:
+            with open(bidsignore_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            if "derivatives/\n" not in lines:
+                with open(bidsignore_path, "a", encoding="utf-8") as f:
+                    warnings.warn(
+                        "'derivatives/' missing in .bidsignore file. Added to exclude derivatives from BIDS validator.",
+                        UserWarning
+                    )
+                    f.write("derivatives/\n")
 
     def validate(
         self,
@@ -170,18 +212,32 @@ class MUnitQuestCustomValidator(Validator):
         )
         return asdict(item)
     
-    def validate_sampling_frequency(self, min_freq: int = 2000) -> None:
+    def validate_sampling_frequency(self, sidecar: dict, path: str, min_freq: int = 2000) -> None:
         """
         Validates towards a minimum sampling frequency in the EMGSideCar.
             Error Code: "INSUFFICIENT_SAMPLING_FREQUENCY"
         Args:
+            sidecar (dict): the sidecar json data of the recording
+            path (str): the path to the sidecar, used for error location relative to dataset name.
             min_freq (int, optional): applied minimum sampling frequency. Defaults to 2000.
         
         Returns:
             None, but adds to self.errors if the sampling frequency is too low.
         """
-        raise NotImplementedError
-    
+        # NOTE We do not have to check the existence of SamplingFrequency,
+        # as this is already required by the BIDS validator
+        fsamp: int = sidecar["SamplingFrequency"]
+        if fsamp < min_freq:
+            self.errors.append(
+                self._itemize(
+                    code="INSUFFICIENT_SAMPLING_FREQUENCY",
+                    severity="error",
+                    location=path
+                )
+            )
+        
+        return None
+
     def validate_ethics_approval(self) -> None:
         """
         Validates towards non-empty existance of ethics approval.
@@ -218,8 +274,41 @@ class MUnitQuestCustomValidator(Validator):
         
         return None
     
+    def validate_cede(self, sidecar: dict, path: str, requirements: list[str] = ["Gain", "Preamplification"]) -> None:
+        """
+        Validates for existence of CEDE requirements. In our case, we are
+            validating towards Gain and Preamplification.
+
+        Args:
+            sidecar (dict): sidecar to check.
+            path (str): location for export.
+            requirements (list[str]): keys to check existence for. Defaults to ["Gain", "Preamplification"].
+        """
+        # TODO content check, e.g. data type and validity
+        for requirement in requirements:
+            cede = sidecar.get(requirement, None)
+            if cede is None:
+                self.errors.append(
+                    self._itemize(
+                        code=f"CEDE_REQUIREMENT_MISSING_{requirement.upper()}",
+                        severity="error",
+                        location=path
+                    )
+                )
+    
     def validate(self) -> tuple[list, bool]:
+        # dataset level checks
         self.validate_ethics_approval()
+
+        # recording level checks
+        for root, _, files in os.walk(self.dataset):
+            for file in files:
+                full_path: str = os.path.join(root, file)
+                relative_path: str = self._relative_path(full_path)
+                if file.endswith("emg.json"):
+                    sidecar: dict = self._load_json(full_path)
+                    self.validate_sampling_frequency(sidecar=sidecar, path=relative_path)
+                    self.validate_cede(sidecar=sidecar, path=relative_path)
 
         return self.errors, self.valid
 
@@ -236,8 +325,6 @@ class MUnitQuestDataSubmissionValidator(Validator):
 
         self.bids_validator = MUnitQuestBidsValidatior(dataset)
         self.custom_validator = MUnitQuestCustomValidator(dataset)
-
-        self._check_bidsignore()
     
     @property
     def metrics(self) -> dict[str, float]:
@@ -246,40 +333,6 @@ class MUnitQuestDataSubmissionValidator(Validator):
             # space for more metrics
         }
         return metrics
-    
-    def _check_bidsignore(self) -> None:
-        """
-        Our validation scheme requires `derivatives/` to be present
-        in the .bidsignore file. This function checks if the file
-        exists in the root of the data directory. If the file does not
-        exist it is created. If the file does exist, but does not contain
-        `derivatives/`, the foldername is appended.
-
-        This is because derivative files are not standardized yet in terms
-        of BIDS validation. Hence, a lot of false positive errors would
-        be generated if derivatives are not ignored.
-
-        Returns:
-            None
-        """
-        bidsignore_path: str = os.path.join(self.dataset, ".bidsignore")
-        if not os.path.exists(bidsignore_path):
-            with open(bidsignore_path, "w", encoding="utf-8") as f:
-                warnings.warn(
-                    ".bidsignore file missing and added to the dataset to exclude derivatives from BIDS validator.",
-                    UserWarning
-                )
-                f.write("derivatives/\n")
-        else:
-            with open(bidsignore_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            if "derivatives/\n" not in lines:
-                with open(bidsignore_path, "a", encoding="utf-8") as f:
-                    warnings.warn(
-                        "'derivatives/' missing in .bidsignore file. Added to exclude derivatives from BIDS validator.",
-                        UserWarning
-                    )
-                    f.write("derivatives/\n")
     
     def write_scores(self, path: str) -> None:
         # has to be written to scores.json
