@@ -5,7 +5,7 @@ Tests the custom validation logic in the data validation module.
 import pytest
 import os
 
-from scoring.data_validation import MUnitQuestCustomValidator as Validator
+from scoring.custom_validation import MUnitQuestCustomValidator as Validator
 
 
 def test_valid_ethics_approval():

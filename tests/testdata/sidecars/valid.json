@@ -20,7 +20,7 @@
     "ManufacturersModelName": "Quattrocento",
     "SoftwareVersions": "OTBioLab+ v.1.5.6.0",
     "Gain": 150,
-    "Preamplification": "Test",
+    "Preamplification": 1904,
     "HardwareFilters": {
         "HighPassFilter": {
             "CutoffFrequency": 10,

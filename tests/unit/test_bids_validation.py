@@ -5,7 +5,7 @@ Tests the BIDS validation logic in the data validation module.
 import pytest
 import os
 
-from scoring.data_validation import MUnitQuestBidsValidatior as Validator
+from scoring.bids_validation import MUnitQuestBidsValidatior as Validator
 
 
 @pytest.fixture(scope="module", autouse=True)
