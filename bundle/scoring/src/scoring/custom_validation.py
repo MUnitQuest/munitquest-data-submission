@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import pandas as pd
 import numpy as np
 
@@ -403,8 +404,52 @@ class MUnitQuestCustomValidator(Validator):
                 )
         
         return None
+    
+    def validate_electrodes(self, path: str):
+        """
+        Validates if a coordinate system is provided, which is enforced
+        in the competition. Note, that if an electrodes.tsv file is provided,
+        the corresponding metadata-file *coordsystem.json is already inspected
+        by the BIDS validator.
 
-    def validate(self) -> tuple[list, bool]:
+        Args:
+            path (str): path to check existence
+        """
+        pattern: re.Pattern = re.compile(r".*_electrodes\.tsv$")
+        files: list[str] = [fname for fname in os.listdir(path) if pattern.match(fname)]
+
+        has_electrodes: bool = len(files) > 0
+        if not has_electrodes:
+            self.errors.append(
+                self._itemize(
+                    code="ELECTRODES_TSV_MISSING",
+                    severity="error",
+                    location=path
+                )
+            )
+        
+        for file in files:
+            # check readability
+            try:
+                df: pd.DataFrame = pd.read_csv(os.path.join(path, file), sep="\t")
+                if not len(df) > 0:
+                    self.errors.append(
+                        self._itemize(
+                            code="ELECTRODES_TSV_EMPTY",
+                            severity="error",
+                            location=path
+                        )
+                    )
+            except:
+                self.errors.append(
+                    self._itemize(
+                        code="ELECTRODES_TSV_UNREADABLE",
+                        severity="error",
+                        location=path
+                    )
+                )
+
+    def validate(self, print_errors: bool=False) -> tuple[list, bool]:
         # dataset level checks
         self.validate_ethics_approval()
 
@@ -420,5 +465,14 @@ class MUnitQuestCustomValidator(Validator):
                     self.validate_events(path=full_path, derivative=False)
                 elif "derivatives/" in full_path and full_path.endswith("_events.tsv"):
                     self.validate_events(path=full_path, derivative=True)
+            
+            # check for existence of electrodes.tsv for non-derivatives
+            # electrodes.tsv should exist per subject/session
+            if root.split("/")[-1] == "emg" and not "derivatives" in root:
+                self.validate_electrodes(path=root)
+        
+        if print_errors:
+            print(f"Number of errors detected by custom validation: {len(self.errors)}")
+            print(json.dumps(self.errors, indent=4))
 
         return self.errors, self.valid
