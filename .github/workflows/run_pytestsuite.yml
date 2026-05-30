@@ -36,7 +36,7 @@ jobs:
         run: pip install -e bundle/scoring
 
       - name: Install test dependencies
-        run: pip install pytest pytest-cov bids-validator-deno
+        run: pip install pytest pytest-cov bids-validator-deno pandas numpy
       
       # we need a placeholder, temporary url.txt file for the tests to run
       - name: Create placeholder url.txt
