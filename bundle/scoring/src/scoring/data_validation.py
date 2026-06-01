@@ -79,11 +79,11 @@ class MUnitQuestDataSubmissionValidator(Validator):
             config_path=config_path
         )
 
-        custom_errors, _ = self.custom_validator.validate(
+        custom_errors, custom_warnings, _ = self.custom_validator.validate(
             print_errors=kwargs.get("print_errors", False)
         )
 
         self.errors = errors + custom_errors
-        self.warnings = warnings  # currently no custom warnings implemented
+        self.warnings = warnings + custom_warnings
 
         return self.errors, self.warnings, self.valid

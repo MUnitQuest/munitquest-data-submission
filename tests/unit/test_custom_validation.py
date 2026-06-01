@@ -73,14 +73,13 @@ def test_validate_cede_missing_requirements():
         path="dummy/path"
     )
 
-    assert len(validator.errors) == 2
+    assert len(validator.errors) == 1
 
     error_codes = [
         error["code"] for error in validator.errors
     ]
 
-    assert "CEDE_REQUIREMENT_MISSING_GAIN" in error_codes
-    assert "CEDE_REQUIREMENT_MISSING_PREAMPLIFICATION" in error_codes
+    assert "CEDE_REQUIREMENTS_MISSING" in error_codes
 
     validator.errors = []
     sidecar: dict = validator._load_json("tests/testdata/sidecars/invalid_fsamp_preamp.json")
@@ -90,13 +89,23 @@ def test_validate_cede_missing_requirements():
         path="dummy/path"
     )
 
+    assert len(validator.errors) == 0
+    assert len(validator.warnings) == 1
+    assert validator.warnings[0].get("code") == "CEDE_REQUIREMENT_MISSING_PREAMPLIFICATION"
+
+    validator.errors = []
+    validator.warnings = []
+    sidecar: dict = validator._load_json("tests/testdata/sidecars/invalid_cede_type.json")
+
+    validator.validate_cede(
+        sidecar=sidecar,
+        path="dummy/path"
+    )
+
     assert len(validator.errors) == 1
-
-    error_codes = [
-        error["code"] for error in validator.errors
-    ]
-
-    assert "CEDE_REQUIREMENT_MISSING_PREAMPLIFICATION" in error_codes
+    assert len(validator.warnings) == 1
+    assert "CEDE_REQUIREMENT_MISSING_GAIN" == validator.warnings[0].get("code")
+    assert "CEDE_REQUIREMENT_INVALID_TYPE_PREAMPLIFICATION" == validator.errors[0].get("code")
 
 
 def test_validate_cede_all_requirements_present():

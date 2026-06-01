@@ -143,34 +143,51 @@ class MUnitQuestCustomValidator(Validator):
     def validate_cede(self, sidecar: dict, path: str, requirements: list[str] = ["Gain", "Preamplification"]) -> None:
         """
         Validates for existence of CEDE requirements. In our case, we are
-            validating towards Gain and Preamplification.
+            validating towards Gain and Preamplification. Thereof, at least one of the
+            requirements needs to be provided to adhere to the CEDE Matrix.
 
         Args:
             sidecar (dict): sidecar to check.
             path (str): location for export.
             requirements (list[str]): keys to check existence for. Defaults to ["Gain", "Preamplification"].
         """
-        # TODO content check, e.g. data type and validity
-        for requirement in requirements:
-            cede = sidecar.get(requirement, None)
-            if cede is None:
+        exists: list[str] = [req for req in requirements if req in sidecar and sidecar[req] is not None]
+        if len(exists) == 0:
+            self.errors.append(
+                self._itemize(
+                    code="CEDE_REQUIREMENTS_MISSING",
+                    severity="error",
+                    location=path,
+                    message=f"To adhere to CEDE Matrix, at least one of the following keys needs to be provided: {requirements}"
+                )
+            )
+
+            return None
+        
+        for cede in exists:
+            value = sidecar[cede]
+            if not isinstance(value, (int, float)):
                 self.errors.append(
                     self._itemize(
-                        code=f"CEDE_REQUIREMENT_MISSING_{requirement.upper()}",
+                        code=f"CEDE_REQUIREMENT_INVALID_TYPE_{cede.upper()}",
                         severity="error",
                         location=path,
-                        message=f"To adhere to CEDE Matrix, please provide key: {requirement}"
+                        message=f"{cede} must be of JSON type number (int, float)"
                     )
                 )
-            elif not isinstance(cede, (int, float)):
-                self.errors.append(
-                    self._itemize(
-                        code=f"CEDE_REQUIREMENT_INVALID_TYPE_{requirement.upper()}",
-                        severity="error",
-                        location=path,
-                        message=f"{requirement} must be of JSON type number (int, float)"
-                    )
+
+        if len(exists) == 1:
+            missing: str = list(set(requirements) - set(exists))[0]
+            self.warnings.append(
+                self._itemize(
+                    code=f"CEDE_REQUIREMENT_MISSING_{missing.upper()}",
+                    severity="warning",
+                    location=path,
+                    message=f"To adhere to CEDE Matrix, it is recommended to provide {missing} in addition to {cede}"
                 )
+            )
+        
+        return None
     
     def _validate_label_file(self, file: str) -> None:
         """
@@ -460,7 +477,7 @@ class MUnitQuestCustomValidator(Validator):
                     )
                 )
 
-    def validate(self, print_errors: bool=False) -> tuple[list, bool]:
+    def validate(self, print_errors: bool=False) -> tuple[list, list, bool]:
         # dataset level checks
         self.validate_ethics_approval()
 
@@ -486,4 +503,4 @@ class MUnitQuestCustomValidator(Validator):
             print(f"\nNumber of errors detected by custom validation: {len(self.errors)}")
             print(json.dumps(self.errors, indent=4))
 
-        return self.errors, self.valid
+        return self.errors, self.warnings, self.valid
