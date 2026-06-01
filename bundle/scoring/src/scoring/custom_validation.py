@@ -366,8 +366,11 @@ class MUnitQuestCustomValidator(Validator):
             NotImplementedError: _description_
         """
         # noise recordings do not require event-files
-        # TODO check filename conventions (degree of adoption)
-        if "baselinenoise" in path:
+        # noise recording are identified by the presence of rest in task label
+        with open(path, "r", encoding="utf-8") as f:
+            sidecar: dict = json.load(f)
+        task: str = sidecar.get("TaskName", "")
+        if "rest" in task.lower():
             return None
         
         elif derivative:
