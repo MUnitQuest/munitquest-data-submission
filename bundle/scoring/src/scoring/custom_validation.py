@@ -14,18 +14,6 @@ class MUnitQuestCustomValidator(Validator):
     def __init__(self, dataset: str):
         super().__init__(dataset)
         self.dataset_sidecar: dict = self._load_json(os.path.join(self.dataset, "dataset_description.json"))
-        self.recording_sidecars: list[str] = self._get_recording_sidecars()
-    
-    def _get_recording_sidecars(self) -> list[str]:
-        """ helper to list all _emg.json-files """
-        sidecars: list[str] = []
-        for root, _, files in os.walk(self.dataset):
-            for file in files:
-                full_path: str = os.path.join(root, file)
-                if file.endswith("_emg.json") and not "derivatives/" in full_path:
-                    sidecars.append(file)
-        
-        return sidecars
 
     def _itemize(self, code: str, severity: str, location: str, message: str) -> dict[str, str]:
         item: ValidationItem = ValidationItem(
@@ -364,19 +352,18 @@ class MUnitQuestCustomValidator(Validator):
 
         Raises:
             NotImplementedError: _description_
-        """
-        # noise recordings do not require event-files
-        # noise recording are identified by the presence of rest in task label
-        with open(path, "r", encoding="utf-8") as f:
-            sidecar: dict = json.load(f)
-        task: str = sidecar.get("TaskName", "")
-        if "rest" in task.lower():
-            return None
-        
-        elif derivative:
+        """        
+        if derivative:
             assert path.endswith("_events.tsv"), "Eventsfile not a derivative"
             _, errors = self._validate_label_file(path)
             self.errors += errors
+            return None
+
+        # noise recordings do not require event-files
+        # noise recording are identified by the presence of rest in task label
+        sidecar: str = self._load_json(path)
+        task: str = sidecar.get("TaskName", "")
+        if "rest" in task.lower():
             return None
         
         events_path: str = path.replace("_emg.json", "_events.tsv")
@@ -414,7 +401,7 @@ class MUnitQuestCustomValidator(Validator):
                     )
                 )
             # TODO might already be caught by BIDS Validator
-            elif not "muscle_on" and not "muscle_off" in values:
+            elif not "muscle_on" in values and not "muscle_off" in values:
                 self.errors.append(
                     self._itemize(
                         code="EVENT_TSV_MISSING_EVENT_TYPE",
@@ -496,7 +483,7 @@ class MUnitQuestCustomValidator(Validator):
                 self.validate_electrodes(path=root)
         
         if print_errors:
-            print(f"Number of errors detected by custom validation: {len(self.errors)}")
+            print(f"\nNumber of errors detected by custom validation: {len(self.errors)}")
             print(json.dumps(self.errors, indent=4))
 
         return self.errors, self.valid

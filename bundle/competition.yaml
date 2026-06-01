@@ -55,3 +55,7 @@ leaderboards:
     key: "valid"
     index: 0
     sorting: desc
+  - title: "Warning Density"
+    key: "warnings_per_recording"
+    index: 1
+    sorting: asc

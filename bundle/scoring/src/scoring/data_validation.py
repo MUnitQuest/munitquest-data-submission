@@ -32,6 +32,7 @@ class MUnitQuestDataSubmissionValidator(Validator):
     def metrics(self) -> dict[str, float]:
         metrics: dict[str, float] = {
             "valid": 0. if self.valid else 1.,
+            "warnings_per_recording": round(len(self.warnings) / len(self.recording_sidecars), 2) if len(self.recording_sidecars) > 0 else 0.
             # space for more metrics
         }
         return metrics
@@ -56,9 +57,20 @@ class MUnitQuestDataSubmissionValidator(Validator):
         """
         Orchestrates the BIDS validation and the custom validation
         """
+        if len(self.recording_sidecars) == 0:
+            self.errors.append(
+                self.custom_validator._itemize(
+                    code="NO_RECORDING_SIDECARS",
+                    severity="error",
+                    location=self.dataset,
+                    issueMessage="No recording sidecars found. It is assumed that the dataset does not contain any recordings"
+                )
+             )
+            return self.errors, self.warnings, self.valid
+        
         config_path: str | None = kwargs.get("config_path", None)
         if config_path is not None:
-            self.bids_validator.validation_config(config_path)  
+            self.bids_validator.validation_config(config_path) 
         
         errors, warnings, _ = self.bids_validator.validate(
             print_errors=kwargs.get("print_errors", False),
