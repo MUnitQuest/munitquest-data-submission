@@ -32,7 +32,8 @@ class MUnitQuestDataSubmissionValidator(Validator):
     def metrics(self) -> dict[str, float]:
         metrics: dict[str, float] = {
             "valid": 0. if self.valid else 1.,
-            "warnings_per_recording": round(len(self.warnings) / len(self.recording_sidecars), 2) if len(self.recording_sidecars) > 0 else 0.
+            "warnings_per_recording": round(len(self.warnings) / len(self.recording_sidecars), 2) if len(self.recording_sidecars) > 0 else 0.,
+            "labelled_mus_per_recording": round(sum(self.custom_validator.labelled_mus) / len(self.recording_sidecars), 2) if len(self.recording_sidecars) > 0 else 0.
             # space for more metrics
         }
         return metrics

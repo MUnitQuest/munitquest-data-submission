@@ -15,6 +15,11 @@ class MUnitQuestCustomValidator(Validator):
         super().__init__(dataset)
         self.dataset_sidecar: dict = self._load_json(os.path.join(self.dataset, "dataset_description.json"))
         self.derivative_events: list[str] = self._list_derivative_events()
+        
+        # As an additional metric, we investigate the average number of detected
+        # MUs per recording. Therefore, we are curating a list of all detected unique
+        # MU ids accross the derivative events files, which we can then relate to the number of recordings.
+        self.labelled_mus: list[int] = []
 
     def _itemize(self, code: str, severity: str, location: str, message: str) -> dict[str, str]:
         item: ValidationItem = ValidationItem(
@@ -356,6 +361,11 @@ class MUnitQuestCustomValidator(Validator):
 
         # Final validation
         is_valid: bool = len(errors) == 0
+
+        # extract unique identifies MUs
+        if is_valid:
+            n_mus: int = mu_df["unit_id"].nunique()
+            self.labelled_mus.append(n_mus)
 
         return is_valid, errors
     
