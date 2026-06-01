@@ -29,6 +29,7 @@ class Validator(abc.ABC):
             )
 
         self.dataset_name: str = self.dataset.split("/")[-1]
+        self.recording_sidecars: list[str] = self._get_recording_sidecars()
 
         self.errors: list[dict] = []
         self.warnings: list[dict] = []
@@ -41,6 +42,17 @@ class Validator(abc.ABC):
 
     def _relative_path(self, path: str) -> str:
         return f"{self.dataset_name}{path.split(self.dataset_name)[-1]}"
+    
+    def _get_recording_sidecars(self) -> list[str]:
+        """ helper to list all _emg.json-files """
+        sidecars: list[str] = []
+        for root, _, files in os.walk(self.dataset):
+            for file in files:
+                full_path: str = os.path.join(root, file)
+                if file.endswith("_emg.json") and not "derivatives/" in full_path:
+                    sidecars.append(file)
+        
+        return sidecars
 
     @abc.abstractmethod
     def validate(self, **kwargs):
