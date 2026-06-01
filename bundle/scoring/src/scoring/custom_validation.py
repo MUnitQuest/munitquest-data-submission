@@ -14,6 +14,7 @@ class MUnitQuestCustomValidator(Validator):
     def __init__(self, dataset: str):
         super().__init__(dataset)
         self.dataset_sidecar: dict = self._load_json(os.path.join(self.dataset, "dataset_description.json"))
+        self.derivative_events: list[str] = self._list_derivative_events()
 
     def _itemize(self, code: str, severity: str, location: str, message: str) -> dict[str, str]:
         item: ValidationItem = ValidationItem(
@@ -73,6 +74,22 @@ class MUnitQuestCustomValidator(Validator):
         bids_filename: str = ("_").join(bids_components)
 
         return bids_filename
+    
+    def _list_derivative_events(self) -> list[str]:
+        """
+        Helper method to list all derivative events files in the dataset.
+
+        Returns:
+            list[str]: list of paths to derivative events files.
+        """
+        events: list[str] = []
+        for root, _, files in os.walk(self.dataset):
+            for file in files:
+                full_path: str = os.path.join(root, file)
+                if "derivatives/" in full_path and full_path.endswith("_events.tsv"):
+                    events.append(full_path)
+        
+        return events
     
     def validate_sampling_frequency(self, sidecar: dict, path: str, min_freq: int = 2000) -> None:
         """
@@ -224,18 +241,6 @@ class MUnitQuestCustomValidator(Validator):
             "description",
         }
 
-        # check if corresponding recording exists
-        sidecar_filename: str = f"{self._bids_filename(path=file)}_emg.json"
-        if not sidecar_filename in self.recording_sidecars:
-            self.errors.append(
-                self._itemize(
-                    code="DERIVATIVES_EVENTS_NOT_MATCHING_SIDECAR",
-                    location=file,
-                    severity="error",
-                    message="No EMG sidecar detected for derivative. Please check file naming conventions"
-                )
-            )
-
         # Load the file
         try:
             df: pd.DataFrame = pd.read_table(file)
@@ -299,7 +304,7 @@ class MUnitQuestCustomValidator(Validator):
                         code="DERIVATIVES_ONSET_NOT_LARGER_ZERO",
                         severity="error",
                         location=file,
-                        message="Onset must be > 0"
+                        message="Onset must be >= 0"
                     )
                 )
 
@@ -350,39 +355,29 @@ class MUnitQuestCustomValidator(Validator):
                 )
 
         # Final validation
-        is_valid = len(errors) == 0
+        is_valid: bool = len(errors) == 0
 
         return is_valid, errors
     
-    def validate_events(self, path: str, derivative: bool) -> None:
+    def validate_events(self, path: str) -> None:
         """
-        Validates existence and contents of events.tsv conditioned on whether
-        the recording is a derivative (e.g. spike train labels) or raw data.
+        Validates existence and contents of events.tsv.
         In essence, for every non-derivative recording-sidecar (*_emg.json), there needs to 
         exist a *_events.tsv file containing at least the values muscle_on muscle_off
-        in the column event_type. In case of the sidecar belonging to a derivative,
-        _validate_label_file() is called.
+        in the column event_type. Further, for every sidecar, there needs to exist a label file
+        as a BIDS derivative.
 
         Args:
             sidecar_path (str): sidecar path from which the corresponding events path is derived.
-            derivative (bool): indicates whether to check validity of label files.
-
-        Raises:
-            NotImplementedError: _description_
-        """        
-        if derivative:
-            assert path.endswith("_events.tsv"), "Eventsfile not a derivative"
-            _, errors = self._validate_label_file(path)
-            self.errors += errors
-            return None
-
+        """
         # noise recordings do not require event-files
         # noise recording are identified by the presence of rest in task label
-        sidecar: str = self._load_json(path)
+        sidecar: dict = self._load_json(path)
         task: str = sidecar.get("TaskName", "")
         if "rest" in task.lower():
             return None
         
+        # check "regular" events file
         events_path: str = path.replace("_emg.json", "_events.tsv")
         if not os.path.exists(events_path):
             self.errors.append(
@@ -427,6 +422,33 @@ class MUnitQuestCustomValidator(Validator):
                         message="Event files must at least be containing muscle_on and muscle_off in event_type"
                     )
                 )
+        
+        # check for corresponding label file as derivative
+        # extract core filename that must also be contained in derivative filename to create a match
+        core_filename: str = path.split("/")[-1].replace("_emg.json", "")
+        matching_derivatives: list[str] = [der for der in self.derivative_events if core_filename in der]
+        if len(matching_derivatives) == 0:
+            self.errors.append(
+                self._itemize(
+                    code="LABELS_MISSING_FOR_RECORDING",
+                    location=path,
+                    severity="error",
+                    message="No derivative events file detected matching the recording. Please check file naming conventions"
+                )
+            )
+        elif len(matching_derivatives) > 1:
+            self.errors.append(
+                self._itemize(
+                    code="MULTIPLE_LABELS_MATCHING_RECORDING",
+                    location=path,
+                    severity="error",
+                    message="Multiple derivative events files detected matching the recording. Please check file naming conventions"
+                )
+            )
+        else:
+            # validate the matching label file
+            _, errors = self._validate_label_file(matching_derivatives[0])
+            self.errors += errors
         
         return None
     
@@ -490,9 +512,8 @@ class MUnitQuestCustomValidator(Validator):
                     sidecar: dict = self._load_json(full_path)
                     self.validate_sampling_frequency(sidecar=sidecar, path=relative_path)
                     self.validate_cede(sidecar=sidecar, path=relative_path)
-                    self.validate_events(path=full_path, derivative=False)
-                elif "derivatives/" in full_path and full_path.endswith("_events.tsv"):
-                    self.validate_events(path=full_path, derivative=True)
+                    # validate event files: "regular" and labels as derivatives
+                    self.validate_events(path=full_path)
             
             # check for existence of electrodes.tsv for non-derivatives
             # electrodes.tsv should exist per subject/session
