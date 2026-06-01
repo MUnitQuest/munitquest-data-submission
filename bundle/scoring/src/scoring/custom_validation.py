@@ -291,7 +291,7 @@ class MUnitQuestCustomValidator(Validator):
             return False, errors
 
         # Check if all onset values are numeric values and larger than zero
-        if not np.issubdtype(mu_df["onset"].dtype, np.number):
+        if not pd.api.types.is_numeric_dtype(mu_df["onset"]):
             errors.append(
                 self._itemize(
                     code="DERIVATIVES_ONSET_MUST_BE_NUMERIC",
@@ -328,36 +328,60 @@ class MUnitQuestCustomValidator(Validator):
             )
 
         # Check if the sample columns contains only integers
-        if not np.issubdtype(mu_df["sample"].dtype, np.integer):
+        if not pd.api.types.is_integer_dtype(mu_df["sample"]):
 
-            invalid: pd.Series[bool] = np.mod(mu_df["sample"], 1) != 0
+            # invalid: pd.Series[bool] = np.mod(mu_df["sample"], 1) != 0
 
+            # if invalid.any():
+            # bad_idx = mu_df.index[invalid].tolist()
+            errors.append(
+                self._itemize(
+                    code="DERIVATIVES_SAMPLE_MUST_BE_INTEGER",
+                    location=file,
+                    severity="error",
+                    message="Sample must be of type Integer"
+                )
+            )
+        else:
+            invalid: pd.Series[bool] = mu_df["sample"] < 0
             if invalid.any():
                 # bad_idx = mu_df.index[invalid].tolist()
                 errors.append(
                     self._itemize(
-                        code="DERIVATIVES_SAMPLE_MUST_BE_INTEGER",
-                        location=file,
+                        code="DERIVATIVES_SAMPLE_NOT_LARGER_ZERO",
                         severity="error",
-                        message="Sample must be of type Integer"
+                        location=file,
+                        message="Sample must be >= 0"
                     )
-                )
+                )    
 
         # Check if the unit_id is always an integer
-        if not np.issubdtype(mu_df["unit_id"].dtype, np.integer):
+        if not pd.api.types.is_integer_dtype(mu_df["unit_id"]):
 
-            invalid: pd.Series[bool] = np.mod(mu_df["unit_id"], 1) != 0
+            #invalid: pd.Series[bool] = np.mod(mu_df["unit_id"], 1) != 0
 
+            #if invalid.any():
+                # bad_idx = mu_df.index[invalid].tolist()
+            errors.append(
+                self._itemize(
+                    code="DERIVATIVES_ID_MUST_BE_INTEGER",
+                    location=file,
+                    severity="error",
+                    message="Unit ID must be of type Integer"
+                )
+            )
+        else:
+            invalid: pd.Series[bool] = mu_df["unit_id"] < 0
             if invalid.any():
                 # bad_idx = mu_df.index[invalid].tolist()
                 errors.append(
                     self._itemize(
-                        code="DERIVATIVES_ID_MUST_BE_INTEGER",
-                        location=file,
+                        code="UNIT_ID_NOT_LARGER_ZERO",
                         severity="error",
-                        message="Unit ID must be of type Integer"
+                        location=file,
+                        message="Unit id must be >= 0"
                     )
-                )
+                )      
 
         # Final validation
         is_valid: bool = len(errors) == 0
