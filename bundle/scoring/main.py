@@ -13,8 +13,13 @@ def main() -> None:
     print(f"Input path: {input_path}")
     print(f"Output path: {output_path}")
 
+    folder_content: list[str] = os.listdir(input_path)
+    print(f"Content of input folder: {folder_content}")
+    if len(folder_content) > 1:
+        raise ValueError(f"Input folder should only contain the dataset folder, but found {len(folder_content)} items: {folder_content}")
+
     # dataset name will be the only directory at the root of input_path
-    dataset_name: str = os.listdir(input_path)[0]
+    dataset_name: str = folder_content[0]
     dataset_path: str = os.path.join(input_path, dataset_name)
     print(f"Dataset path: {dataset_path}")
 

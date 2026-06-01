@@ -59,3 +59,7 @@ leaderboards:
     key: "warnings_per_recording"
     index: 1
     sorting: asc
+  - title: "Labelled MUs per Recording"
+    key: "labelled_mus_per_recording"
+    index: 2
+    sorting: desc

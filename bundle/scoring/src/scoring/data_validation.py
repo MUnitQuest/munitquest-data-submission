@@ -6,6 +6,7 @@ Further, successful submissions to MUnitQuest require an additional
 custom validation layer, applied to BIDS validation results and an
 additional scan of the submitted data.
 """
+import numpy as np
 
 from scoring.report import MUnitQuestDataSubmissionReport
 from scoring.bids_validation import MUnitQuestBidsValidatior
@@ -31,9 +32,9 @@ class MUnitQuestDataSubmissionValidator(Validator):
     @property
     def metrics(self) -> dict[str, float]:
         metrics: dict[str, float] = {
-            "valid": 0. if self.valid else 1.,
+            "valid": 1. if self.valid else 0.,
             "warnings_per_recording": round(len(self.warnings) / len(self.recording_sidecars), 2) if len(self.recording_sidecars) > 0 else 0.,
-            "labelled_mus_per_recording": round(sum(self.custom_validator.labelled_mus) / len(self.recording_sidecars), 2) if len(self.recording_sidecars) > 0 else 0.
+            "labelled_mus_per_recording": round(np.mean(self.custom_validator.labelled_mus), 2) if len(self.custom_validator.labelled_mus) > 0 else 0.,
             # space for more metrics
         }
         return metrics

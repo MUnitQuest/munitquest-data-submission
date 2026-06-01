@@ -34,7 +34,7 @@ def test_main_invalid_args():
 
 def test_main_valid_args(output_path):
     result = subprocess.run(
-        ["python", "bundle/scoring/main.py", "tests/testdata/", output_path],
+        ["python", "bundle/scoring/main.py", "tests/testdata/testMain", output_path],
         check=False,
         capture_output=True,
         text=True
