@@ -44,7 +44,8 @@ class MUnitQuestDataSubmissionValidator(Validator):
         report: MUnitQuestDataSubmissionReport = MUnitQuestDataSubmissionReport(
             valid=self.valid,
             errors=self.errors,
-            warnings=self.warnings
+            warnings=self.warnings,
+            dataset_name=self.dataset_name
         )
 
         report.write_report(outfile)

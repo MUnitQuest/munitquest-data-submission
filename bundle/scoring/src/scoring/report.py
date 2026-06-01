@@ -18,7 +18,7 @@ from collections import Counter, defaultdict
 
 class MUnitQuestDataSubmissionReport:
 
-    def __init__(self, valid: bool, errors: str | list[dict], warnings: str | list[dict]):
+    def __init__(self, valid: bool, errors: str | list[dict], warnings: str | list[dict], dataset_name: str):
         """
         Initializes report generation
 
@@ -30,6 +30,8 @@ class MUnitQuestDataSubmissionReport:
         self.valid: bool = valid
         self.errors: list[dict] = self.load_json(errors) if isinstance(errors, str) else errors
         self.warnings: list[dict] = self.load_json(warnings) if isinstance(warnings, str) else warnings
+
+        self.dataset_name: str = dataset_name
 
         self.html: str = ""
 
@@ -166,7 +168,7 @@ class MUnitQuestDataSubmissionReport:
             </head>
             <body>
 
-            <h1>Validation Report</h1>
+            <h1>Validation Report - {self.dataset_name}</h1>
 
             <div class="summary">
                 <h2>1. Overall Validation Result</h2>
@@ -220,12 +222,17 @@ class MUnitQuestDataSubmissionReport:
             self.html += f"<details><summary>{code} ({len(items)})</summary>"
 
             for item in items:
+                if item.get('subCode', None) is not None:
+                    descr: str = f"<p><strong>Description:</strong>{item['subCode']} - {item.get('issueMessage', 'N/A')}</p>"
+                else:
+                    descr: str = f"<p><strong>Description:</strong> {item.get('issueMessage', 'N/A')}</p>"
                 self.html += f"""
                 <details>
                     <summary>{item['location']}</summary>
                     <p><strong>Severity:</strong> {item['severity']}</p>
                     <p><strong>Location:</strong> <span class="location">{item['location']}</span></p>
                     <p><strong>Origin:</strong> {item.get('origin', 'BIDS Validator')}</p>
+                    {descr}
                 </details>
                 """
 
@@ -237,6 +244,10 @@ class MUnitQuestDataSubmissionReport:
             self.html += f"<details><summary>{code} ({len(items)})</summary>"
 
             for item in items:
+                if item.get('subCode', None) is not None:
+                    descr: str = f"<p><strong>Description:</strong> {item['subCode']} - {item.get('issueMessage', 'N/A')}</p>"
+                else:
+                    descr: str = f"<p><strong>Description:</strong> {item.get('issueMessage', 'N/A')}</p>"
                 self.html += f"""
                 <details>
                     <summary>{item['location']}</summary>
@@ -244,6 +255,7 @@ class MUnitQuestDataSubmissionReport:
                     <p><strong>Location:</strong> <span class="location">{item['location']}</span></p>
                     <p><strong>Rule:</strong> {item.get('rule', 'N/A')}</p>
                     <p><strong>Origin:</strong> {item.get('origin', 'BIDS Validator')}</p>
+                    {descr}
                 </details>
                 """
 

@@ -27,13 +27,13 @@ class MUnitQuestCustomValidator(Validator):
         
         return sidecars
 
-    
-    def _itemize(self, code: str, severity: str, location: str) -> dict[str, str]:
+    def _itemize(self, code: str, severity: str, location: str, message: str) -> dict[str, str]:
         item: ValidationItem = ValidationItem(
             code=code,
             severity=severity,
             location=self._relative_path(location),
             origin="MUnitQuest Custom Validator",
+            issueMessage=message
         )
         return asdict(item)
     
@@ -72,7 +72,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="DERIVATIVES_INVALID_EVENT_FILENAME",
                     location=path,
-                    severity="error"
+                    severity="error",
+                    message="Derivative file does not match any recording. The filename needs to adhere to BIDS"
                 )
             )
         
@@ -105,7 +106,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="INSUFFICIENT_SAMPLING_FREQUENCY",
                     severity="error",
-                    location=path
+                    location=path,
+                    message=f"Sampling frequency must be at least 2000 Hz. Your sampling frequency: {fsamp}"
                 )
             )
         
@@ -125,7 +127,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="MISSING_ETHICS_APPROVAL",
                     severity="error",
-                    location="/dataset_description.json"
+                    location="/dataset_description.json",
+                    message="MUnitQuest submissions require Ethics Approval(s)"
                 )
             )
         elif not isinstance(ethics_approvals, list):
@@ -133,7 +136,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="INVALID_ETHICS_APPROVAL_TYPE",
                     severity="error",
-                    location="/dataset_description.json"
+                    location="/dataset_description.json",
+                    message="EthicsApprovals must be of JSON type array"
                 )
             )
         elif len(ethics_approvals) == 0:
@@ -141,7 +145,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="MISSING_ETHICS_APPROVAL",
                     severity="error",
-                    location="/dataset_description.json"
+                    location="/dataset_description.json",
+                    message="EthicsApproval is empty"
                 )
             )
         
@@ -165,7 +170,8 @@ class MUnitQuestCustomValidator(Validator):
                     self._itemize(
                         code=f"CEDE_REQUIREMENT_MISSING_{requirement.upper()}",
                         severity="error",
-                        location=path
+                        location=path,
+                        message=f"To adhere to CEDE Matrix, please provide key: {requirement}"
                     )
                 )
             elif not isinstance(cede, (int, float)):
@@ -173,7 +179,8 @@ class MUnitQuestCustomValidator(Validator):
                     self._itemize(
                         code=f"CEDE_REQUIREMENT_INVALID_TYPE_{requirement.upper()}",
                         severity="error",
-                        location=path
+                        location=path,
+                        message=f"{requirement} must be of JSON type number (int, float)"
                     )
                 )
     
@@ -219,7 +226,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="DERIVATIVES_EVENTS_NOT_MATCHING_SIDECAR",
                     location=file,
-                    severity="error"
+                    severity="error",
+                    message="No EMG sidecar detected for derivative. Please check file naming conventions"
                 )
             )
 
@@ -231,7 +239,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="UNREADABLE_EVENTS_TSV_FORMAT",
                     location=file,
-                    severity="error"
+                    severity="error",
+                    message=f"Error when reading {file}. Please validate file format"
                 )
             )
             return False, errors
@@ -240,12 +249,12 @@ class MUnitQuestCustomValidator(Validator):
         missing: set[str] = required_columns - set(df.columns)
 
         if missing:
-            # f"Missing required columns: {sorted(missing)}"
             errors.append(
                 self._itemize(
                     code="DERIVATIVES_MISSING_EVENT_COLUMN",
                     location=file,
-                    severity="error"
+                    severity="error",
+                    message=f"Missing required columns: {sorted(missing)}"
                 )
             )
 
@@ -260,7 +269,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="DERIVATIVES_MISSING_MU_SPIKE_EVENTS",
                     location=file,
-                    severity="error"
+                    severity="error",
+                    message="motor-unit-spike missing in event description column"
                 )
             )
             return False, errors
@@ -271,19 +281,20 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="DERIVATIVES_ONSET_MUST_BE_NUMERIC",
                     location=file,
-                    severity="error"
+                    severity="error",
+                    message="Onset must be numeric"
                 )
             )
         else:
             invalid: pd.Series[bool] = mu_df["onset"] < 0
-
             if invalid.any():
                 # bad_idx = mu_df.index[invalid].tolist()
                 errors.append(
                     self._itemize(
                         code="DERIVATIVES_ONSET_NOT_LARGER_ZERO",
                         severity="error",
-                        location=file
+                        location=file,
+                        message="Onset must be > 0"
                     )
                 )
 
@@ -296,7 +307,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="DERIVATOVES_DURATION_NOT_ZERO",
                     severity="error",
-                    location=file
+                    location=file,
+                    message="Duration for MU spikes must always be 0"
                 )
             )
 
@@ -311,7 +323,8 @@ class MUnitQuestCustomValidator(Validator):
                     self._itemize(
                         code="DERIVATIVES_SAMPLE_MUST_BE_INTEGER",
                         location=file,
-                        severity="error"
+                        severity="error",
+                        message="Sample must be of type Integer"
                     )
                 )
 
@@ -326,7 +339,8 @@ class MUnitQuestCustomValidator(Validator):
                     self._itemize(
                         code="DERIVATIVES_ID_MUST_BE_INTEGER",
                         location=file,
-                        severity="error"
+                        severity="error",
+                        message="Unit ID must be of type Integer"
                     )
                 )
 
@@ -368,7 +382,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="MISSING_EVENTS_FILE",
                     severity="error",
-                    location=path
+                    location=path,
+                    message="MUnitQuest submissions require eventfiles for every recording (if recording is not baseline noise)"
                 )
             )
         else:
@@ -379,7 +394,8 @@ class MUnitQuestCustomValidator(Validator):
                     self._itemize(
                         code="UNREADABLE_EVENTS_TSV_FORMAT",
                         location=events_path,
-                        severity="error"
+                        severity="error",
+                        message=f"Error when reading {events_path}. Please validate file format"
                     )
                 )
                 return None
@@ -390,7 +406,8 @@ class MUnitQuestCustomValidator(Validator):
                     self._itemize(
                         code="EVENT_TSV_WITHOUT_DATA",
                         location=events_path,
-                        severity="error"
+                        severity="error",
+                        message=f"{events_path} is an empty file"
                     )
                 )
             # TODO might already be caught by BIDS Validator
@@ -399,7 +416,8 @@ class MUnitQuestCustomValidator(Validator):
                     self._itemize(
                         code="EVENT_TSV_MISSING_EVENT_TYPE",
                         location=events_path,
-                        severity="error"
+                        severity="error",
+                        message="Event files must at least be containing muscle_on and muscle_off in event_type"
                     )
                 )
         
@@ -424,7 +442,8 @@ class MUnitQuestCustomValidator(Validator):
                 self._itemize(
                     code="ELECTRODES_TSV_MISSING",
                     severity="error",
-                    location=path
+                    location=path,
+                    message="MUnitQuest submissions require definition of electrode coordinates"
                 )
             )
         
@@ -437,7 +456,8 @@ class MUnitQuestCustomValidator(Validator):
                         self._itemize(
                             code="ELECTRODES_TSV_EMPTY",
                             severity="error",
-                            location=path
+                            location=path,
+                            message=f"{file} is an empty file"
                         )
                     )
             except:
@@ -445,7 +465,8 @@ class MUnitQuestCustomValidator(Validator):
                     self._itemize(
                         code="ELECTRODES_TSV_UNREADABLE",
                         severity="error",
-                        location=path
+                        location=path,
+                        message=f"Error when reading {file}. Please validate file format"
                     )
                 )
 

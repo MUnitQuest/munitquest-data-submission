@@ -12,6 +12,7 @@ class ValidationItem:
     severity: str  # error or warning
     location: str  # filepath of the issue
     origin: str = "BIDS Validator"  # BIDS validator or MUnitQuest
+    issueMessage: str = "N/A"
     rule: str = "N/A"  # TODO
 
 
