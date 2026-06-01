@@ -63,6 +63,7 @@ class MUnitQuestDataSubmissionValidator(Validator):
         errors, warnings, _ = self.bids_validator.validate(
             print_errors=kwargs.get("print_errors", False),
             print_warnings=kwargs.get("print_warnings", False),
+            ignored_codes=kwargs.get("ignored_codes", []),
             config_path=config_path
         )
 

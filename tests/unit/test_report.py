@@ -3,7 +3,6 @@ Test cases for HTML report module.
 """
 
 import pytest
-import os
 
 from scoring.report import MUnitQuestDataSubmissionReport as Report
 
@@ -13,7 +12,7 @@ from scoring.report import MUnitQuestDataSubmissionReport as Report
     (False, "Invalid")
 ])
 def test_status_property(valid, expected_status):
-    report: Report = Report(valid=valid, errors=[], warnings=[])
+    report: Report = Report(valid=valid, errors=[], warnings=[], dataset_name="TEST")
     assert report.validation_status == expected_status
 
 
@@ -38,7 +37,7 @@ def test_html_generation_invalid():
             "severity": "error"
         }
     ]
-    report: Report = Report(valid=False, errors=errors, warnings=[])
+    report: Report = Report(valid=False, errors=errors, warnings=[], dataset_name="TEST")
     report.generate_html()
     assert "<h2>Upload Instructions</h2>" not in report.html
 
@@ -51,6 +50,6 @@ def test_html_generation_valid():
             "severity": "warning"
         }
     ]
-    report: Report = Report(valid=True, errors=[], warnings=warnings)
+    report: Report = Report(valid=True, errors=[], warnings=warnings, dataset_name="TEST")
     report.generate_html()
     assert "<h2>Upload Instructions</h2>" in report.html
