@@ -21,12 +21,12 @@ def main() -> None:
     validator: Validator = Validator(dataset_path)
 
     # generate validation config
-    config_path: str = "bids_validation_config.json"
-    validator.validation_config(config_path)
+    config_path: str = None
 
-    errors, warnings, valid = validator.run_bids_validator(
+    errors, warnings, valid = validator.validate(
         print_errors=True,
         print_warnings=True,
+        ignored_codes=["SIDECAR_WITHOUT_DATAFILE"],  # ignore missing edfs
         config_path=config_path,
     )
     validator.write_scores(os.path.join(output_path, "scores.json"))
