@@ -235,8 +235,12 @@ class MUnitQuestCustomValidator(Validator):
 
             errors : list of str
                 List of validation error messages.
+
+            warnings : list of str
+                List of validation warning messages.    
         """
         errors: list[dict] = []
+        warnings: list[dict] = []
         # Define required column names
         required_columns: set[str] = {
             "onset",
@@ -259,7 +263,7 @@ class MUnitQuestCustomValidator(Validator):
                 )
             )
             return False, errors
-
+        
         # Check if required columns are present
         missing: set[str] = required_columns - set(df.columns)
 
@@ -274,7 +278,20 @@ class MUnitQuestCustomValidator(Validator):
             )
 
             # Cannot continue safely
-            return False, errors
+            return False, errors, warnings
+        
+        # Check if the events.tsv file is empty
+        if len(df) == 0:
+            warnings.append(
+                self._itemize(
+                    code="EMPTY_LABEL_FILE",
+                    location=file,
+                    severity="warning",
+                    message="The spike label file is empty. Make sure that this is correct."
+                )
+            )
+            return True, errors, warnings
+
 
         # Check if the file includes motor unit spike events
         mu_df: pd.DataFrame = df[df["description"] == "motor-unit-spike"]
@@ -288,7 +305,7 @@ class MUnitQuestCustomValidator(Validator):
                     message="motor-unit-spike missing in event description column"
                 )
             )
-            return False, errors
+            return False, errors, warnings
 
         # Check if all onset values are numeric values and larger than zero
         if not pd.api.types.is_numeric_dtype(mu_df["onset"]):
@@ -330,10 +347,6 @@ class MUnitQuestCustomValidator(Validator):
         # Check if the sample columns contains only integers
         if not pd.api.types.is_integer_dtype(mu_df["sample"]):
 
-            # invalid: pd.Series[bool] = np.mod(mu_df["sample"], 1) != 0
-
-            # if invalid.any():
-            # bad_idx = mu_df.index[invalid].tolist()
             errors.append(
                 self._itemize(
                     code="DERIVATIVES_SAMPLE_MUST_BE_INTEGER",
@@ -358,10 +371,6 @@ class MUnitQuestCustomValidator(Validator):
         # Check if the unit_id is always an integer
         if not pd.api.types.is_integer_dtype(mu_df["unit_id"]):
 
-            #invalid: pd.Series[bool] = np.mod(mu_df["unit_id"], 1) != 0
-
-            #if invalid.any():
-                # bad_idx = mu_df.index[invalid].tolist()
             errors.append(
                 self._itemize(
                     code="DERIVATIVES_ID_MUST_BE_INTEGER",
@@ -391,7 +400,7 @@ class MUnitQuestCustomValidator(Validator):
             n_mus: int = mu_df["unit_id"].nunique()
             self.labelled_mus.append(n_mus)
 
-        return is_valid, errors
+        return is_valid, errors, warnings
     
     def validate_events(self, path: str) -> None:
         """
@@ -481,8 +490,9 @@ class MUnitQuestCustomValidator(Validator):
             )
         else:
             # validate the matching label file
-            _, errors = self._validate_label_file(matching_derivatives[0])
+            _, errors, warnings = self._validate_label_file(matching_derivatives[0])
             self.errors += errors
+            self.warnings += warnings
         
         return None
     
