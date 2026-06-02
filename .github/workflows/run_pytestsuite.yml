@@ -1,0 +1,46 @@
+name: pytest-suite
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "bundle/scoring/**"
+      - "tests/**"
+      - "pyproject.toml"
+
+  pull_request:
+    paths:
+      - "bundle/scoring/**"
+      - "tests/**"
+      - "pyproject.toml"
+
+  workflow_dispatch:  # manual trigger
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install package (editable)
+        run: pip install -e bundle/scoring
+
+      - name: Install test dependencies
+        run: pip install pytest pytest-cov bids-validator-deno pandas numpy
+      
+      # we need a placeholder, temporary url.txt file for the tests to run
+      - name: Create placeholder url.txt
+        run: echo "https://example.com/testuite" > url.txt
+
+      - name: Run tests
+        run: pytest -ra --strict-markers

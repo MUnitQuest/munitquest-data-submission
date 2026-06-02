@@ -1,2 +1,2 @@
-command: python data_validation.py
+command: bash execute.sh
 description: Indicates successfull validation of submission

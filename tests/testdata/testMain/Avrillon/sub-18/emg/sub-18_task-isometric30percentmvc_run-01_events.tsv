@@ -1,0 +1,6 @@
+onset	duration	sample	mvc_rate	mvc_level	event_type	description
+11.342773	0.0	23230	n/a	n/a	muscle_on	Time at which the muscle is activated.
+11.342773	6.0	23230	5.0	0.0	linear_isometric_ramp	Linear ramp (rate: 5 % MVC per s; duration: 6.0 s) of the isometric torque starting at 0 % MVC.
+17.34375	20.0	35520	0.0	30.0	steady_isometric	Steady isometric torque at 30% MVC for 20 s
+37.342773	6.0	76478	-5.0	30.0	linear_isometric_ramp	Linear ramp (rate: -5 % MVC per s; duration: 6.0 s) of the isometric torque starting at 30 % MVC.
+43.34375	0.0	88768	n/a	n/a	muscle_off	Time at which the muscle is deactivated.
