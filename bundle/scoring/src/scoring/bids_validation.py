@@ -100,10 +100,10 @@ class MUnitQuestBidsValidatior(Validator):
         warnings = [f for f in issues if f["severity"] == "warning"]
         # Print issues
         if print_errors:
-            print(f"Number of detected errors: {len(errors)}")
+            print(f"Number of detected errors (BIDS Validator): {len(errors)}")
             print(json.dumps(errors, indent=4))
         if print_warnings:    
-            print(f"Number of detected warnings: {len(warnings)}")
+            print(f"Number of detected warnings (BIDS Validator): {len(warnings)}")
             print(json.dumps(warnings, indent=4))
         # Check if the folder is BIDS valid
         valid = True if len(errors) == 0 else False

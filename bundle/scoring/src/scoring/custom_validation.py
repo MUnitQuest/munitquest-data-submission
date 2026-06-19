@@ -565,7 +565,7 @@ class MUnitQuestCustomValidator(Validator):
                 self.validate_electrodes(path=root)
         
         if print_errors:
-            print(f"\nNumber of errors detected by custom validation: {len(self.errors)}")
+            print(f"\nNumber of detected errors (Custom Validator): {len(self.errors)}")
             print(json.dumps(self.errors, indent=4))
 
         return self.errors, self.warnings, self.valid
