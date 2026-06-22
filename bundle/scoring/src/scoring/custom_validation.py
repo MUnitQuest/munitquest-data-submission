@@ -221,7 +221,7 @@ class MUnitQuestCustomValidator(Validator):
         - duration    : must be 0
         - sample      : integer
         - unit_id     : integer
-        - description : must include "motor-unit-spike"
+        - event_type : must include "motor-unit-spike"
 
         Args
         ----
@@ -247,7 +247,7 @@ class MUnitQuestCustomValidator(Validator):
             "duration",
             "sample",
             "unit_id",
-            "description",
+            "event_type",
         }
 
         # Load the file
@@ -262,7 +262,7 @@ class MUnitQuestCustomValidator(Validator):
                     message=f"Error when reading {file}. Please validate file format"
                 )
             )
-            return False, errors
+            return False, errors, warnings
         
         # Check if required columns are present
         missing: set[str] = required_columns - set(df.columns)
@@ -294,7 +294,7 @@ class MUnitQuestCustomValidator(Validator):
 
 
         # Check if the file includes motor unit spike events
-        mu_df: pd.DataFrame = df[df["description"] == "motor-unit-spike"]
+        mu_df: pd.DataFrame = df[df["event_type"] == "motor-unit-spike"]
 
         if len(mu_df) == 0:
             errors.append(
@@ -302,7 +302,7 @@ class MUnitQuestCustomValidator(Validator):
                     code="DERIVATIVES_MISSING_MU_SPIKE_EVENTS",
                     location=file,
                     severity="error",
-                    message="motor-unit-spike missing in event description column"
+                    message="motor-unit-spike missing in event event_type column"
                 )
             )
             return False, errors, warnings
